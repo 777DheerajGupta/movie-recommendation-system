@@ -3,7 +3,7 @@ import pickle
 import pandas as pd
 import requests
 
-
+# Function to fetch movie poster from The Movie Database (TMDB)
 def fetch_poster(movie_id):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?language=en-US"
 
@@ -13,8 +13,6 @@ def fetch_poster(movie_id):
     }
 
     response = requests.get(url, headers=headers)
-
-    # print( 'response id' , response.json())
 
     if response.status_code == 200:
         data = response.json()
@@ -29,7 +27,7 @@ def fetch_poster(movie_id):
     else:
         return None
 
-
+# Function to recommend movies based on similarity
 def recommend(movie):
     movie_index = movies[movies['title'] == movie].index[0]
     distances = similarity[movie_index]
@@ -38,23 +36,36 @@ def recommend(movie):
     recommended_movies = []
     recommended_movies_posters = []
     for i in movies_list:
-       movie_id = i[0]
-       recommended_movies.append(movies.iloc[i[0]].title)
-       poster = fetch_poster(movies.iloc[i[0]].movie_id)  # Assuming you have movie_id in the movies dataset
-       recommended_movies_posters.append(poster)
-    return recommended_movies , recommended_movies_posters
+        movie_id = i[0]
+        recommended_movies.append(movies.iloc[i[0]].title)
+        poster = fetch_poster(movies.iloc[i[0]].movie_id)  # Assuming you have movie_id in the movies dataset
+        recommended_movies_posters.append(poster)
+    return recommended_movies, recommended_movies_posters
 
+# Function to download similarity.pkl from GitHub Release
+def download_similarity_file():
+    url = "https://github.com/777DheerajGupta/movie-recommendation-system/releases/download/v1.0/similarity.pkl"
+    response = requests.get(url)
+    with open("similarity.pkl", "wb") as f:
+        f.write(response.content)
 
+# Ensure the similarity.pkl file is downloaded if not already present
+try:
+    similarity = pickle.load(open('similarity.pkl', 'rb'))
+except FileNotFoundError:
+    download_similarity_file()
+    similarity = pickle.load(open('similarity.pkl', 'rb'))
+
+# Load the movies data from the local file
 movies_dict = pickle.load(open('movie_dict.pkl', 'rb'))
 movies = pd.DataFrame(movies_dict)
 
-similarity = pickle.load(open('similarity.pkl', 'rb'))
-
+# Streamlit app title and user input
 st.title('Movie Recommender System')
 
 selected_movie_name = st.selectbox('Select Movie', movies['title'].values)
 
-
+# Display recommended movies upon button click
 if st.button('Recommend Movie'):
     names, posters = recommend(selected_movie_name)
 
@@ -74,4 +85,3 @@ if st.button('Recommend Movie'):
                     st.write("Poster not available")
             else:
                 st.write("Poster not available")
-
